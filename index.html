@@ -1,42 +1,642 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mobile Game Development</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #1e1e2f;
-      color: #fff;
-      text-align: center;
-    }
-    header {
-      padding: 60px 20px;
-      background: linear-gradient(135deg, #6a5acd, #00bcd4);
-    }
-    h1 { margin: 0; font-size: 2.2em; }
-    section { padding: 30px 20px; max-width: 700px; margin: auto; }
-    footer { padding: 20px; color: #aaa; font-size: 0.9em; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLANCE — Açıklanabilir yapay zekâ trading ajanı</title>
+<meta name="description" content="GLANCE, kullanıcının yazdığı işlem planını uygulayan, her kararının gerekçesini yazan ve kararlarını değiştirilemez bir kayda işleyen yapay zekâ trading ajanı. TED Üniversitesi CMPE 491 bitirme projesi.">
+<meta property="og:title" content="GLANCE — Açıklanabilir yapay zekâ trading ajanı">
+<meta property="og:description" content="Model önerir, kod karar verir. TED Üniversitesi CMPE 491 bitirme projesi.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dfdedb; --surface:#d3d2ce; --sheet:#eceae6;
+  --ink:#26251e; --muted:#54524a; --accent:#1e47b0; --accent-ink:#ffffff;
+  --line:#b9b7b1;
+  --font:"General Sans","Segoe UI",system-ui,sans-serif;
+
+  --step-small:clamp(0.8125rem,0.78rem + 0.14vw,0.875rem);
+  --step-body:clamp(1.0625rem,1rem + 0.25vw,1.1875rem);
+  --step-lead:clamp(1.25rem,1.1rem + 0.7vw,1.625rem);
+  --step-head:clamp(2rem,1.3rem + 3.2vw,4rem);
+  --step-display:clamp(2.25rem,0.2rem + 9.2vw,8.5rem);
+
+  --pad:clamp(20px,4vw,56px);
+  --gap-section:clamp(110px,13vw,190px);
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable both-edges}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:400 var(--step-body)/1.5 var(--font);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,p,ul,ol,figure,blockquote{margin:0}
+ul{padding:0;list-style:none}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+::selection{background:var(--accent);color:var(--accent-ink)}
+.num,table{font-variant-numeric:tabular-nums}
+
+.wrap{max-width:1340px;margin-inline:auto;padding-inline:var(--pad)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+section{margin-bottom:var(--gap-section)}
+
+/* ---------- type roles ---------- */
+.display{font-weight:700;font-size:var(--step-display);line-height:0.9;letter-spacing:-0.035em}
+.head{font-weight:700;font-size:var(--step-head);line-height:1.0;letter-spacing:-0.025em}
+.lead{font-size:var(--step-lead);line-height:1.35;letter-spacing:-0.01em}
+.small{font-size:var(--step-small);line-height:1.5}
+.soft{color:var(--muted)}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;min-height:54px;padding:0 30px;
+  background:var(--accent);color:var(--accent-ink);border:0;border-radius:0;
+  font-weight:500;font-size:var(--step-body);cursor:pointer;
+  transition:transform 120ms var(--ease),background-color 150ms ease;
+}
+.btn:hover{background:#16368a}
+.btn:active{transform:translateY(1px)}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-top:28px;margin-bottom:clamp(44px,7vw,96px)}
+.mark{font-weight:600;font-size:var(--step-body);letter-spacing:-0.01em}
+.bar nav{display:flex;flex-wrap:wrap;gap:12px 20px;font-size:var(--step-small);justify-content:flex-end}
+.bar nav a{color:var(--muted);transition:color 150ms ease}
+.bar nav a:hover{color:var(--ink)}
+
+/* ---------- interface fragments ---------- */
+[data-ui]{
+  background:var(--sheet);border:1px solid var(--line);border-radius:6px;
+  font-size:var(--step-small);line-height:1.5;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+[data-ui] .ui-top{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--line); /* taste-skill-ignore: data-ui fragment */
+  color:var(--muted);
+}
+[data-ui] .ui-body{padding:18px 16px}
+[data-ui] .ui-row{display:flex;justify-content:space-between;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line)} /* taste-skill-ignore: data-ui fragment */
+[data-ui] .ui-row:last-of-type{border-bottom:0}
+.tag{display:inline-block;padding:2px 9px;border-radius:4px;font-size:var(--step-small);font-weight:500;white-space:nowrap}
+.tag-wait{background:#e4d5ad;color:#453808}
+.tag-pass{background:#c6dccc;color:#17391f}
+.tag-stop{background:#ecccc8;color:#641a17}
+.tag-paper{background:#c8d3ee;color:#17295f}
+
+/* ---------- hero ---------- */
+.hero h1{margin-bottom:clamp(36px,5vw,60px)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(36px,5vw,80px);align-items:start}
+.hero .lead{max-width:34ch;margin-bottom:32px}
+.hero-meta{margin-top:28px;color:var(--muted);font-size:var(--step-small);max-width:40ch}
+.line{display:block;overflow:hidden}
+.line>span{display:block}
+
+.receipt .ui-body{padding:20px}
+.receipt .r-top{display:flex;justify-content:space-between;gap:12px;color:var(--muted)}
+.decision{font-weight:600;font-size:var(--step-lead);letter-spacing:-0.02em;line-height:1.15;margin:10px 0 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.why{margin-bottom:18px;max-width:58ch}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.fact{background:var(--surface);border-radius:4px;padding:6px 10px}
+.fact b{font-weight:600}
+.chain{margin-top:18px;padding-top:14px;border-top:1px solid var(--line); /* taste-skill-ignore: data-ui fragment */ color:var(--muted);word-break:break-word}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{background:var(--surface);padding:28px 26px;min-height:230px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
+.tile-head{grid-column:span 2;background:var(--accent);color:var(--accent-ink)}
+.tile-head p{max-width:32ch;color:#ffffff}
+.tile .fig{font-weight:700;font-size:var(--step-head);line-height:0.95;letter-spacing:-0.03em}
+.tile .what{max-width:31ch;font-size:var(--step-small)}
+
+/* ---------- plates (found pictures) ---------- */
+.plate img{width:100%;object-fit:cover}
+.plate-wide img{height:clamp(300px,42vw,620px)}
+.plate-strip img{height:clamp(150px,19vw,280px);object-position:center 3%;mix-blend-mode:multiply}
+.cap{margin-top:16px;font-size:var(--step-small);color:var(--muted);max-width:68ch}
+.cap b{font-weight:500;color:var(--ink)}
+
+/* ---------- how it works ---------- */
+.steps{max-width:660px;margin-inline:auto}
+.step{margin-bottom:88px}
+.step:last-child{margin-bottom:0}
+.step-say{font-size:var(--step-lead);font-weight:500;letter-spacing:-0.01em;margin-bottom:20px;max-width:30ch}
+.call{background:var(--surface);padding:20px;border-radius:6px;font-size:var(--step-small);line-height:1.55;max-width:62ch}
+.call b{display:block;font-weight:500;color:var(--muted);margin-bottom:8px}
+.resp{margin-top:20px;margin-left:clamp(0px,4vw,56px)}
+pre{margin:0;overflow-x:auto}
+pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:var(--step-small);line-height:1.65;white-space:pre}
+.breakout{width:min(1340px - 2*var(--pad),calc(100vw - 2*var(--pad)));margin-left:calc((min(660px,100%) - min(1340px - 2*var(--pad),100vw - 2*var(--pad)))/2)}
+.scroller{overflow-x:auto}
+.log{width:100%;min-width:720px;border-collapse:collapse;font-size:var(--step-small)}
+.log th,.log td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.log th{font-weight:500;color:var(--muted)}
+.log tr:last-child td{border-bottom:0}
+.log .h{color:var(--muted)}
+.log .why-cell{min-width:270px}
+
+/* ---------- panel with margin notes ---------- */
+.panelgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,390px) minmax(0,1fr);gap:0 clamp(24px,4vw,64px);align-items:start}
+.panel{grid-column:2;align-self:start}
+.note{max-width:27ch;padding-bottom:32px}
+.note h3{font-size:var(--step-body);font-weight:600;letter-spacing:-0.01em;margin-bottom:5px;transition:color 150ms ease}
+.note p{font-size:var(--step-body);line-height:1.45}
+.note-l{text-align:right;margin-left:auto}
+.notes-l{grid-column:1}
+.notes-r{grid-column:3}
+.note:hover h3,.note:focus-within h3{color:var(--accent)}
+.panel .ui-row{align-items:center;transition:background-color 180ms ease}
+.panel .ui-row.on{background:#c8d3ee}
+.panel .ui-row span:last-child{font-weight:500}
+.panel-foot{padding:14px 16px;border-top:1px solid var(--line)} /* taste-skill-ignore: data-ui fragment */
+.panel-foot.note-foot{color:var(--muted)}
+.pause{width:100%;min-height:44px;background:transparent;border:1px solid var(--line); /* taste-skill-ignore: real control */ border-radius:6px;cursor:pointer;font-size:var(--step-small);transition:background-color 150ms ease}
+.pause:hover{background:var(--surface)}
+
+/* ---------- total and its receipt ---------- */
+.totalgrid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(36px,5vw,80px);align-items:stretch}
+.totalcol{display:flex;flex-direction:column;justify-content:space-between;gap:48px;min-height:580px}
+.totalcol .head{margin-bottom:22px}
+.note-lines{max-width:42ch}
+.total{font-weight:700;font-size:var(--step-display);line-height:0.8;letter-spacing:-0.04em}
+.total-cap{margin-top:20px;max-width:40ch}
+.verdict{margin-top:22px;display:inline-block;padding:11px 16px;font-weight:500;font-size:var(--step-small);border-radius:4px}
+.v-pass{background:#c6dccc;color:#17391f}
+.v-fail{background:#ecccc8;color:#641a17}
+
+.slip{
+  background:var(--sheet);width:min(100%,460px);margin-left:auto;padding:28px 28px 46px;
+  font-size:var(--step-small);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 14px),
+    95% 100%,90% calc(100% - 14px),85% 100%,80% calc(100% - 14px),75% 100%,70% calc(100% - 14px),
+    65% 100%,60% calc(100% - 14px),55% 100%,50% calc(100% - 14px),45% 100%,40% calc(100% - 14px),
+    35% 100%,30% calc(100% - 14px),25% 100%,20% calc(100% - 14px),15% 100%,10% calc(100% - 14px),
+    5% 100%,0 calc(100% - 14px));
+}
+.slip h3{font-weight:600;margin:22px 0 7px}
+.slip h3:first-of-type{margin-top:0}
+.slip .r{display:flex;align-items:baseline;gap:6px;padding:5px 0}
+.slip .r .k{white-space:nowrap}
+.slip .r .d{flex:1;border-bottom:2px dotted var(--line);transform:translateY(-4px)}
+.slip .r .v{white-space:nowrap;font-variant-numeric:tabular-nums}
+.slip .tot{display:flex;justify-content:space-between;gap:12px;margin-top:22px;background:var(--ink);color:var(--bg);padding:13px 16px;font-weight:600}
+.ctrl{margin-top:28px;width:min(100%,460px);margin-left:auto}
+.ctrl label{display:flex;justify-content:space-between;gap:12px;font-size:var(--step-small);margin-bottom:8px}
+.ctrl input[type=range]{width:100%;accent-color:var(--accent);margin-bottom:20px}
+
+/* ---------- scope ---------- */
+.scope{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.scope>div{background:var(--surface);padding:clamp(24px,3vw,40px)}
+.scope>div.out{background:var(--sheet)}
+.scope h3{font-size:var(--step-body);font-weight:600;margin-bottom:18px}
+.scope li{padding:9px 0}
+.scope .out li{color:var(--muted)}
+.scope-note{margin-top:48px;max-width:62ch}
+
+/* ---------- letter ---------- */
+.letter{width:min(100%,560px);margin-inline:auto}
+.letter .head{margin-bottom:30px}
+.letter p{margin-bottom:20px;line-height:1.55}
+.mark-hl{background:#c8d3ee;padding:0 4px}
+.sign{margin-top:32px;font-size:var(--step-lead);font-weight:600;letter-spacing:-0.01em;margin-bottom:4px!important}
+.role{font-size:var(--step-small);color:var(--muted)}
+
+/* ---------- footer ---------- */
+footer{padding-bottom:34px}
+.disclaim{max-width:64ch;font-size:var(--step-small);color:var(--muted);margin-bottom:18px}
+.credits{max-width:64ch;font-size:var(--step-small);color:var(--muted);margin-bottom:46px}
+.credits a{border-bottom:1px solid var(--line)} /* taste-skill-ignore: inline link underline */
+.foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:baseline;gap:20px;font-size:var(--step-small)}
+.foot .mid{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.foot .mid a{transition:color 150ms ease}
+.foot .mid a:hover{color:var(--accent)}
+.foot .rt{text-align:right;color:var(--muted)}
+.foot .lf{color:var(--muted)}
+
+/* ---------- motion ---------- */
+.js .line>span{transform:translateY(105%);opacity:0}
+.js .line.in>span{transform:translateY(0);opacity:1;transition:transform 900ms var(--ease) var(--d,0ms),opacity 700ms ease var(--d,0ms)}
+.js .rv{opacity:0;transform:translateY(22px)}
+.js .rv.in{opacity:1;transform:none;transition:opacity 620ms ease var(--d,0ms),transform 760ms var(--ease) var(--d,0ms)}
+
+@media (max-width:1040px){
+  .hero-grid,.totalgrid,.scope{grid-template-columns:1fr}
+  .totalcol{min-height:0;gap:40px}
+  .tiles{grid-template-columns:repeat(2,1fr);gap:6px}
+  .tile{min-height:180px;padding:22px}
+  .steps{max-width:none}
+  .resp{margin-left:0}
+  .breakout{width:auto;margin-left:0}
+  .panelgrid{grid-template-columns:1fr}
+  .panel{grid-column:1;grid-row:2;max-width:430px}
+  .notes-l,.notes-r{grid-column:1;grid-row:auto;display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:30px}
+  .note,.note-l{text-align:left;max-width:none;margin-left:0;padding-bottom:24px}
+  .slip,.ctrl{width:100%;max-width:none}
+  .foot{grid-template-columns:1fr;gap:10px}
+  .foot .mid{justify-content:flex-start}
+  .foot .rt{text-align:left}
+}
+@media (max-width:620px){
+  .notes-l,.notes-r{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .js .line>span,.js .rv{opacity:1!important;transform:none!important;transition:none!important}
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>🎮 Mobile Game Development</h1>
-    <p>Bitirme Projesi</p>
-  </header>
+<script>document.documentElement.className="js";</script>
 
-  <section>
-    <h2>Proje Hakkında</h2>
-    <p>Bu proje kapsamında mobil platformlar için bir oyun geliştirilmektedir.</p>
-  </section>
+<header class="wrap bar">
+  <span class="mark">GLANCE</span>
+  <nav>
+    <a href="#nasil">Nasıl çalışır</a>
+    <a href="#risk">Risk kapısı</a>
+    <a href="#kapsam">Kapsam</a>
+    <a href="#ekip">Ekip</a>
+  </nav>
+</header>
 
-  <section>
-    <h2>Ekip</h2>
-    <p>Emre Avcı · Emre Aktürk · Çağıl Sayan</p>
-  </section>
+<main>
 
-  <footer>© 2026 Mobile Game Development</footer>
+<!-- ============ HERO ============ -->
+<section class="wrap hero">
+  <h1 class="display">
+    <span class="line"><span>Model önerir,</span></span>
+    <span class="line"><span>kod karar verir.</span></span>
+  </h1>
+
+  <div class="hero-grid">
+    <div>
+      <p class="lead rv">GLANCE, yazdığınız işlem planını piyasada uygulayan, aldığı ve almadığı her işlemin gerekçesini yazan bir yapay zekâ ajanı.</p>
+      <a class="btn rv" href="#nasil" style="--d:90ms">Nasıl çalıştığını gör</a>
+      <p class="hero-meta rv" style="--d:170ms">CMPE 491 Bitirme Projesi I · TED Üniversitesi Bilgisayar Mühendisliği · 2026–2027</p>
+    </div>
+
+    <figure class="receipt rv" data-ui style="--d:230ms">
+      <div class="ui-top">
+        <span>GLANCE · karar kaydı #1482</span>
+        <span class="tag tag-paper">kâğıt hesap</span>
+      </div>
+      <div class="ui-body">
+        <div class="r-top"><span>ETH/USDT · 4 saatlik</span><span>01.11.2026 03:40</span></div>
+        <p class="decision">Karar: bekle <span class="tag tag-wait">emir açılmadı</span></p>
+        <p class="why">4 saatlik trend yukarı, ancak ATR son 20 mumun %82’sinin üzerinde. Bu volatilitede planın izin verdiği stop mesafesi, planda yazan en az 2,0 ödül/risk oranını karşılamıyor. Bu yüzden emir gönderilmedi.</p>
+        <div class="facts">
+          <span class="fact">trend <b>yukarı</b></span>
+          <span class="fact">ATR <b>yüksek</b></span>
+          <span class="fact">ödül/risk <b>1,4</b></span>
+          <span class="fact">plan alt sınırı <b>2,0</b></span>
+        </div>
+        <p class="chain">zincir: a9f3…7c21 · önceki kayıt: 4e08…b1d9</p>
+      </div>
+      <figcaption class="sr">GLANCE’ın bir işlemi neden almadığını yazdığı örnek karar kaydı.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ PROBLEM ============ -->
+<section class="wrap">
+  <div class="tiles">
+    <div class="tile tile-head rv">
+      <h2 class="head">Botlara neden güvenilmiyor?</h2>
+      <p>Mevcut trading botları sabit kuralları tekrarlar ve hiçbir şey açıklamaz. Rakamlar da bunu söylüyor.</p>
+    </div>
+    <div class="tile rv" style="--d:60ms">
+      <p class="fig num">%88</p>
+      <p class="what">Decrypt’in 10.388 kişilik trader anketinde (2020) botlara güvenmediğini söyleyenler.</p>
+    </div>
+    <div class="tile rv" style="--d:120ms">
+      <p class="fig num">%93</p>
+      <p class="what">Aynı ankette, ücretli kullanıcılardan ilk ay içinde bırakanlar.</p>
+    </div>
+    <div class="tile rv" style="--d:180ms">
+      <p class="fig num">%69</p>
+      <p class="what">Aynı ankette, botları fazla teknik bulduğunu söyleyenler.</p>
+    </div>
+    <div class="tile rv" style="--d:240ms">
+      <p class="fig num">%81</p>
+      <p class="what">Aynı ankette, botların yeterince iyi olmadığını düşünenler.</p>
+    </div>
+    <div class="tile rv" style="--d:300ms">
+      <p class="fig num">3,2 mn</p>
+      <p class="what">Temmuz 2026 MKK verisine göre Türkiye’de lisanslı platformlarda kripto varlık tutan kişi.</p>
+    </div>
+    <div class="tile rv" style="--d:360ms">
+      <p class="fig num">%54</p>
+      <p class="what">MEXC’in Ekim 2026 raporunda, fonunun bir kısmıyla yapay zekânın işlem yapmasına izin verebileceğini söyleyen yatırımcı.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PLATE ============ -->
+<section class="plate plate-wide">
+  <figure class="rv">
+    <img src="assets/wall-street-bubbles-always-the-same-keppler.jpg" width="1920" height="1296"
+         alt="1901 tarihli renkli karikatür: boğa kılığındaki bir finansçı, üzerinde “şişirilmiş değerler” yazan sabun köpüklerini havaya üflüyor, kalabalık köpükleri yakalamaya çalışıyor." loading="lazy" decoding="async">
+    <figcaption class="wrap cap"><b>Wall Street Bubbles — Always the Same, 1901.</b> Otomatik al-sat yeni, ama kalabalığın göremediği şeyin peşinden gitmesi yeni değil. GLANCE’ın tek iddiası getiri değil: her kararın gerekçesinin önceden yazılı olması.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="wrap" id="nasil">
+  <div class="steps">
+    <h2 class="head rv" style="margin-bottom:56px">Ajan nasıl çalışır</h2>
+
+    <div class="step">
+      <p class="step-say rv">Önce planınızı yazıyorsunuz.</p>
+      <div class="call rv" style="--d:60ms">
+        <b>Siz yazıyorsunuz</b>
+        BTC ve ETH’de sadece uzun yön. İşlem başına risk %1, aynı anda en fazla 2 pozisyon, tek pozisyon bakiyenin %40’ını geçmesin, ödül/risk en az 2.
+      </div>
+      <div class="resp rv" data-ui style="--d:120ms">
+        <div class="ui-top"><span>Ajan planı tekrar ediyor</span><span>onayınızı bekliyor</span></div>
+        <div class="ui-row"><span>Varlıklar</span><span>BTC/USDT, ETH/USDT</span></div>
+        <div class="ui-row"><span>Yön</span><span>yalnızca uzun</span></div>
+        <div class="ui-row"><span>İşlem başına risk</span><span>%1,00</span></div>
+        <div class="ui-row"><span>Eşzamanlı pozisyon</span><span>en fazla 2</span></div>
+        <div class="ui-row"><span>Tek pozisyon üst sınırı</span><span>bakiyenin %40’ı</span></div>
+        <div class="ui-row"><span>En az ödül/risk</span><span>2,0</span></div>
+        <div class="panel-foot"><button class="pause" id="approve" type="button">Planı onayla</button></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <p class="step-say rv">Sonra ajan piyasayı tarıyor ve bir öneri üretiyor.</p>
+      <div class="call rv" style="--d:60ms">
+        <b>Ajan topluyor</b>
+        15 dakikalık, 1 saatlik, 4 saatlik ve günlük mumlar · emir defteri derinliği · fonlama oranı ve açık pozisyon (piyasa sunuyorsa). Eksik veri tahmin edilmez, eksik olarak işaretlenir. Trend, ATR, momentum ve likidite sıradan kodla hesaplanır; dil modeli yalnızca bu sayıları okur.
+      </div>
+      <div class="resp rv" data-ui style="--d:120ms">
+        <div class="ui-top"><span>Dil modelinin çıktısı · sabit JSON biçimi</span><span>doğrulandı</span></div>
+        <div class="ui-body">
+<pre><code>{
+  "karar" : "bekle",
+  "sembol": "ETH/USDT",
+  "stop"  : null,
+  "hedef" : null,
+  "neden" : "ATR son 20 mumun %82'sinin
+             üzerinde; planın izin
+             verdiği stop mesafesi
+             ödül/risk 2,0'ı
+             karşılamıyor."
+}</code></pre>
+          <p class="small soft" style="margin-top:16px">Biçime uymayan bir çıktı hiçbir zaman işleme dönüşmez.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <p class="step-say rv">Her karar, aldığı kadar almadığı da, kayda geçiyor.</p>
+      <div class="resp breakout rv" data-ui style="--d:60ms">
+        <div class="ui-top"><span>Karar kaydı · hash zinciri</span><span>son üç kayıt</span></div>
+        <div class="scroller">
+          <table class="log">
+            <thead><tr><th>Kayıt</th><th>Saat</th><th>Varlık</th><th>Karar</th><th>Gerekçe</th><th>Zincir</th></tr></thead>
+            <tbody>
+              <tr><td>#1480</td><td>02:10</td><td>BTC/USDT</td><td><span class="tag tag-pass">al · geçti</span></td><td class="why-cell">Günlük trend yukarı, ödül/risk 2,6. 0,018 BTC, stop 96.400 USDT.</td><td class="h">4e08…b1d9</td></tr>
+              <tr><td>#1481</td><td>02:55</td><td>SOL/USDT</td><td><span class="tag tag-stop">reddedildi</span></td><td class="why-cell">Risk kapısı: varlık planda yok ve tek pozisyon üst sınırı aşılıyor.</td><td class="h">7b31…02af</td></tr>
+              <tr><td>#1482</td><td>03:40</td><td>ETH/USDT</td><td><span class="tag tag-wait">bekle</span></td><td class="why-cell">Ödül/risk 1,4, planın alt sınırı 2,0.</td><td class="h">a9f3…7c21</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-foot note-foot">Her kayıt bir öncekinin özetini taşır; sonradan değiştirilen tek bir satır zinciri kırar.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STRIP ============ -->
+<section class="plate plate-strip">
+  <figure class="rv">
+    <img src="assets/thetapeworm1907.png" width="1097" height="1516"
+         alt="1907 tarihli karikatürden bir şerit: silindir şapkalı yatırımcılar, borsa bandının kâğıt şeridine dolanmış halde yürüyor." loading="lazy" decoding="async">
+    <figcaption class="wrap cap"><b>The Tapeworm, 1907.</b> Borsa bandına dolanmış yatırımcılar. Bugün şeridin yerinde bir dil modeli var; ne alıp satacağına karar veren yer hâlâ sıradan kod olmalı.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ PANEL WITH MARGIN NOTES ============ -->
+<section class="wrap" id="risk">
+  <h2 class="head rv" style="margin-bottom:clamp(40px,5vw,72px)">Modelin atlayamadığı kapı</h2>
+  <div class="panelgrid">
+    <div class="notes-l">
+      <div class="note note-l rv" data-target="r1" tabindex="0">
+        <h3>Varsayılan kâğıt hesap</h3>
+        <p>Ajan kâğıt hesapta başlar. Gerçek hesapta işlem, yalnızca kullanıcı açtığında çalışır.</p>
+      </div>
+      <div class="note note-l rv" data-target="r2" style="--d:60ms" tabindex="0">
+        <h3>Çekim yetkisiz anahtar</h3>
+        <p>Yalnızca para çekme yetkisi olmayan API anahtarı kabul edilir. Anahtar şifreli saklanır, modele gönderilmez, loglara yazılmaz.</p>
+      </div>
+      <div class="note note-l rv" data-target="r3" style="--d:120ms" tabindex="0">
+        <h3>Riski plan belirler</h3>
+        <p>Pozisyon büyüklüğü modelin tercihiyle değil, plandaki risk yüzdesi ve stop mesafesiyle hesaplanır.</p>
+      </div>
+    </div>
+
+    <div class="panel rv" data-ui style="--d:80ms">
+      <div class="ui-top"><span>GLANCE · plan ve limitler</span><span class="tag tag-pass">etkin</span></div>
+      <div class="ui-row" id="r1"><span>Hesap modu</span><span>kâğıt (paper)</span></div>
+      <div class="ui-row" id="r2"><span>API anahtarı</span><span>çekim yetkisi yok</span></div>
+      <div class="ui-row" id="r3"><span>İşlem başına risk</span><span>%1,00</span></div>
+      <div class="ui-row" id="r4"><span>Zorunlu stop</span><span>açık</span></div>
+      <div class="ui-row" id="r5"><span>Tek pozisyon üst sınırı</span><span>bakiyenin %40’ı</span></div>
+      <div class="ui-row"><span>Açık pozisyon</span><span>1 / 2</span></div>
+      <div class="ui-row"><span>Bugün</span><span>14 tarama · 1 emir</span></div>
+      <div class="panel-foot"><button class="pause" id="r6" type="button">Ajanı duraklat</button></div>
+    </div>
+
+    <div class="notes-r">
+      <div class="note note-r rv" data-target="r4" tabindex="0">
+        <h3>Stopsuz emir yok</h3>
+        <p>Risk kapısı her emre stop-loss koyar. Stopu olmayan bir emir borsaya hiç gitmez.</p>
+      </div>
+      <div class="note note-r rv" data-target="r5" style="--d:60ms" tabindex="0">
+        <h3>Maruziyet limiti</h3>
+        <p>Aynı anda açılabilecek pozisyon sayısı ve tek pozisyonun büyüklüğü kullanıcının yazdığı planla sınırlıdır.</p>
+      </div>
+      <div class="note note-r rv" data-target="r6" style="--d:120ms" tabindex="0">
+        <h3>Her an durdurma</h3>
+        <p>Kullanıcı ajanı istediği an duraklatır. Ajan, tekrarlayan API hatalarında kendini de durdurur.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TOTAL AND ITS RECEIPT ============ -->
+<section class="wrap">
+  <div class="totalgrid">
+    <div class="totalcol">
+      <div>
+        <h2 class="head rv">Pozisyonu risk belirler</h2>
+        <p class="note-lines rv" style="--d:60ms">Planı siz yazarsınız, kaç adet alınacağını kod hesaplar. Aşağıdaki iki değeri değiştirin: fiş ve risk kapısının kararı anında yeniden hesaplanır.</p>
+      </div>
+      <div>
+        <p class="total num" id="total">35.000 ₺</p>
+        <p class="total-cap" id="totalCap">100.000 ₺ bakiyede, işlem başına %1,00 riskle ve 70 ₺’lik stop mesafesiyle hesaplanan pozisyon büyüklüğü.</p>
+        <p class="verdict v-pass" id="verdict">Risk kapısı: geçti · stop 2.380 ₺’ye kuruldu</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="slip rv" style="--d:80ms">
+        <h3>Plan</h3>
+        <div class="r"><span class="k">Bakiye</span><span class="d"></span><span class="v num">100.000,00 ₺</span></div>
+        <div class="r"><span class="k">İşlem başına risk</span><span class="d"></span><span class="v num" id="sRiskPct">%1,00</span></div>
+        <div class="r"><span class="k">En az ödül/risk</span><span class="d"></span><span class="v num">2,0</span></div>
+        <div class="r"><span class="k">Tek pozisyon üst sınırı</span><span class="d"></span><span class="v num">40.000,00 ₺</span></div>
+        <h3>Kurulum</h3>
+        <div class="r"><span class="k">Giriş</span><span class="d"></span><span class="v num">2.450,00 ₺</span></div>
+        <div class="r"><span class="k">Stop</span><span class="d"></span><span class="v num" id="sStop">2.380,00 ₺</span></div>
+        <div class="r"><span class="k">Stop mesafesi</span><span class="d"></span><span class="v num" id="sDist">70,00 ₺</span></div>
+        <div class="r"><span class="k">Hedef</span><span class="d"></span><span class="v num" id="sTarget">2.590,00 ₺</span></div>
+        <h3>Hesap</h3>
+        <div class="r"><span class="k">Risk tutarı</span><span class="d"></span><span class="v num" id="sRiskAmt">1.000,00 ₺</span></div>
+        <div class="r"><span class="k">Adet</span><span class="d"></span><span class="v num" id="sQty">14,2857</span></div>
+        <div class="tot"><span>Pozisyon büyüklüğü</span><span class="num" id="sTotal">35.000,00 ₺</span></div>
+      </div>
+
+      <div class="ctrl rv" style="--d:140ms">
+        <label for="riskRange"><span>İşlem başına risk</span><span class="num" id="riskOut">%1,00</span></label>
+        <input id="riskRange" type="range" min="0.25" max="2" step="0.05" value="1">
+        <label for="stop"><span>Stop fiyatı</span><span class="num" id="stopOut">2.380 ₺</span></label>
+        <input id="stop" type="range" min="2300" max="2440" step="5" value="2380">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCOPE ============ -->
+<section class="wrap" id="kapsam">
+  <h2 class="head rv" style="margin-bottom:clamp(36px,4vw,56px)">Bu iki dönemde ne yapılacak</h2>
+  <div class="scope">
+    <div class="rv">
+      <h3>Kapsam içinde</h3>
+      <ul>
+        <li>Likit varlıklarda spot işlem</li>
+        <li>Bir borsa entegrasyonu ve kâğıt işlem</li>
+        <li>Pozisyon, kâr-zarar, limit ve karar kaydını gösteren web paneli</li>
+        <li>Giriş, çıkış ve risk olaylarında Telegram bildirimi</li>
+        <li>Aynı kodu geçmiş veride çalıştıran backtest modülü</li>
+        <li>Hash zincirli karar kaydı</li>
+      </ul>
+    </div>
+    <div class="rv out" style="--d:80ms">
+      <h3>Kapsam dışında</h3>
+      <ul>
+        <li>Kaldıraçlı canlı işlem</li>
+        <li>Başkasının parasını yönetmek</li>
+        <li>Mobil uygulama</li>
+        <li>Yüksek frekanslı stratejiler</li>
+        <li>Yatırım tavsiyesi ve getiri vaadi</li>
+      </ul>
+    </div>
+  </div>
+  <p class="scope-note rv">Final demosundan önce GLANCE dört hafta kâğıt hesapta çalışacak. Başarı ölçütü getiri değil: tek bir risk kuralını çiğnememesi. Sonuçlar, aynı risk ayarlarıyla al-tut ve basit bir trend takibi stratejisiyle yan yana raporlanacak.</p>
+</section>
+
+<!-- ============ TEAM ============ -->
+<section class="wrap" id="ekip">
+  <div class="letter">
+    <h2 class="head rv" style="margin-bottom:30px">Ekip</h2>
+    <p class="rv">Fikir kendi işlemlerimizden çıktı. Piyasa gün boyu açık; iyi kurulumlar çoğu zaman biz uyurken ya da derste otururken oluşuyor.</p>
+    <p class="rv" style="--d:60ms">İşin büyük kısmı tekrar: trendi, volatiliteyi, fonlamayı ve pozisyon büyüklüğünü yeniden yeniden kontrol etmek. En zor kısmı ise bir zarardan sonra plana sadık kalabilmek.</p>
+    <p class="rv" style="--d:120ms">3Commas ve Cryptohopper gibi hazır botlar sabit kuralı tekrarlıyor ve <span class="mark-hl">hiçbir şeyin nedenini söylemiyor.</span> Biz de nedeni yazan bir ajan yapmaya karar verdik.</p>
+    <p class="rv" style="--d:180ms">GLANCE kâr vaat etmiyor. Vaat ettiği tek şey, her kararın ve her reddin gerekçesiyle birlikte kayıtlı olması.</p>
+    <p class="sign rv" style="--d:240ms">Emre Avcı · Emre Aktürk · Çağıl Sayan</p>
+    <p class="role rv" style="--d:260ms">TED Üniversitesi, Bilgisayar Mühendisliği · CMPE 491 Bitirme Projesi I</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <p class="disclaim">GLANCE bir bitirme projesidir. Yatırım danışmanı değildir, yatırım tavsiyesi vermez ve kâr vaat etmez. Sayfadaki karar kaydı, panel ve fiş örnekleri kâğıt hesap verisiyle hazırlanmış temsilî örneklerdir.</p>
+  <p class="credits">Görseller: “Wall Street bubbles — Always the same”, Udo Keppler, 1901, kamu malı, <a href="https://commons.wikimedia.org/wiki/File:Wall_Street_bubbles_-_Always_the_same_-_Keppler_1901.jpg">Wikimedia Commons</a> · “The Tapeworm”, Frank Arthur Nankivell, 1907, kamu malı, <a href="https://commons.wikimedia.org/wiki/File:TheTapeworm1907.png">Wikimedia Commons</a>.</p>
+  <div class="foot">
+    <span class="lf">Açıklanabilir trading ajanı</span>
+    <span class="mid">
+      <a href="https://github.com/Emreavci1/mobile-game-development">Kaynak kodu</a>
+      <a href="#nasil">Nasıl çalışır</a>
+      <a href="#ekip">Ekip</a>
+    </span>
+    <span class="rt">2026 · TED Üniversitesi</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+  },{threshold:0.1,rootMargin:"0px 0px -6% 0px"});
+  document.querySelectorAll(".rv").forEach(function(el){ io.observe(el); });
+
+  document.querySelectorAll(".hero .line").forEach(function(l,i){
+    l.style.setProperty("--d",(i*110)+"ms");
+    requestAnimationFrame(function(){ l.classList.add("in"); });
+  });
+
+  document.querySelectorAll(".note[data-target]").forEach(function(n){
+    var row = document.getElementById(n.dataset.target);
+    if(!row) return;
+    var on  = function(){ row.classList.add("on"); };
+    var off = function(){ row.classList.remove("on"); };
+    n.addEventListener("mouseenter",on); n.addEventListener("mouseleave",off);
+    n.addEventListener("focus",on); n.addEventListener("blur",off);
+  });
+
+  var approve = document.getElementById("approve");
+  if(approve) approve.addEventListener("click",function(){
+    var done = approve.dataset.done === "1";
+    approve.textContent = done ? "Planı onayla" : "Plan etkin · ajan çalışıyor";
+    approve.dataset.done = done ? "0" : "1";
+  });
+
+  /* ---- risk gate ---- */
+  var BAL = 100000, ENTRY = 2450, RR = 2, CAP = 0.40;
+  var riskEl = document.getElementById("riskRange"), stopEl = document.getElementById("stop");
+  var tl = function(n,d){ return n.toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d}); };
+  var set = function(id,v){ var el = document.getElementById(id); if(el) el.textContent = v; };
+
+  function calc(){
+    var pct  = parseFloat(riskEl.value) / 100;
+    var stop = parseFloat(stopEl.value);
+    var dist = ENTRY - stop;
+    var amt  = BAL * pct;
+    var qty  = amt / dist;
+    var pos  = qty * ENTRY;
+    var cap  = BAL * CAP;
+    var ok   = pos <= cap;
+
+    set("riskOut",  "%" + tl(pct*100,2));
+    set("stopOut",  tl(stop,0) + " ₺");
+    set("sRiskPct", "%" + tl(pct*100,2));
+    set("sStop",    tl(stop,2) + " ₺");
+    set("sDist",    tl(dist,2) + " ₺");
+    set("sTarget",  tl(ENTRY + RR*dist,2) + " ₺");
+    set("sRiskAmt", tl(amt,2) + " ₺");
+    set("sQty",     tl(qty,4));
+    set("sTotal",   tl(pos,2) + " ₺");
+    set("total",    tl(pos,0) + " ₺");
+    set("totalCap", "100.000 ₺ bakiyede, işlem başına %" + tl(pct*100,2) +
+                    " riskle ve " + tl(dist,0) + " ₺’lik stop mesafesiyle hesaplanan pozisyon büyüklüğü.");
+
+    var v = document.getElementById("verdict");
+    v.className = "verdict " + (ok ? "v-pass" : "v-fail");
+    v.textContent = ok
+      ? "Risk kapısı: geçti · stop " + tl(stop,0) + " ₺’ye kuruldu"
+      : "Risk kapısı: reddedildi · pozisyon, tek pozisyon üst sınırını (40.000 ₺) aşıyor";
+  }
+  if(riskEl && stopEl){ riskEl.addEventListener("input",calc); stopEl.addEventListener("input",calc); calc(); }
+})();
+</script>
 </body>
 </html>
